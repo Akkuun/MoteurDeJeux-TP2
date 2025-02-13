@@ -337,7 +337,10 @@ void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &t
     float step = 1.0f / (i - 1);
     for (int y = 0; y < i; ++y) {
         for (int x = 0; x < i; ++x) {
-            vertices.push_back(glm::vec3(x * step, 0.0f, y * step));
+            //random height
+            float height = 0.05f * (rand() % 100) / 100.0f;
+
+            vertices.push_back(glm::vec3(x * step, height, y * step));
             texCoords.push_back(glm::vec2(x * step, y * step));
             if (x < i - 1 && y < i - 1) {
                 int topLeft = y * i + x;
