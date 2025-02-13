@@ -1,0 +1,59 @@
+# CMake build directory
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compiled binary
+TP1/TP1
+
+# Object files
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.libs
+*.a
+*.lib
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.dll
+*.so
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# TypeScript
+*.tsbuildinfo
+
+# JavaScript
+node_modules/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Other
+*.DS_Store
+*.directory

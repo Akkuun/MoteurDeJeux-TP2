@@ -1,0 +1,8 @@
+Décompresser le fichier, dans le dossier résultant :
+mkdir build
+cd build
+cmake ..
+make -j
+./launch-TP1.sh
+
+
