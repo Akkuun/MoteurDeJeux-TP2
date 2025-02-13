@@ -25,7 +25,7 @@ using namespace std;
 #include <common/vboindexer.hpp>
 
 void processInput(GLFWwindow *window);
-void creationTerrain(std::vector<glm::vec3> &vector1, int i);
+void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -106,7 +106,10 @@ int main(void) {
 
     // Create and compile our GLSL program from the shaders
     GLuint programID = LoadShaders("vertex_shader.glsl", "fragment_shader.glsl");
-
+    if (programID == 0) {
+        std::cerr << "Failed to load shaders" << std::endl;
+        return -1;
+    }
     /*****************TODO***********************/
     // Get a handle for our "Model View Projection" matrices uniforms
     GLuint MatrixID = glGetUniformLocation(programID, "MVP");
@@ -121,28 +124,30 @@ int main(void) {
 //    //Chargement du fichier de maillage
 //    std::string filename("chair.off");
 //    loadOFF(filename, indexed_vertices, indices, triangles);
+// Création de la géométrie via une fonction
 
-    // Création de la géométrie via une fonction
-    creationTerrain(indexed_vertices, 16);
+    creationTerrain(indexed_vertices, indices, 16);
 
-    // Load it into a VBO
-
+// Load it into a VBO
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
 
-    // Generate a buffer for the indices as well
+// Print the vertex buffer data
+    for (const auto& vertex : indexed_vertices) {
+        std::cout << "Vertex: (" << vertex.x << ", " << vertex.y << ", " << vertex.z << ")" << std::endl;
+    }
+
+// Generate a buffer for the indices as well
     GLuint elementbuffer;
     glGenBuffers(1, &elementbuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
 
-    // Get a handle for our "LightPosition" uniform
+// Get a handle for our "LightPosition" uniform
     glUseProgram(programID);
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
-
-
 
     // For speed computation
     double lastTime = glfwGetTime();
@@ -205,7 +210,7 @@ int main(void) {
         // Draw the triangles !
         glDrawElements(
                 GL_TRIANGLES,      // mode
-                indices.size(),    // count
+                indices.size()*3,    // count
                 GL_UNSIGNED_SHORT,   // type
                 (void *) 0           // element array buffer offset
         );
@@ -260,7 +265,7 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera_position -= cameraSpeed * camera_up;
 
-    cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
+    //cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
 
 
 }
@@ -273,27 +278,23 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 //fonction créant le maillage d'un terrain de taille i x i
-void creationTerrain(std::vector<glm::vec3> &vector1, int i) {
-    // Create a rectangular grid of size i x i
+void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i) {
     int yNiveau = 0;
-    // Create the vertices
-    for (unsigned int dx = 0; dx < i; dx++) {
-        for (unsigned int dy = 0; dy < i; dy++) {
-            glm::vec3 v1 = glm::vec3(dx, yNiveau, dy);
-            glm::vec3 v2 = glm::vec3(dx + 1, yNiveau, dy);
-            glm::vec3 v3 = glm::vec3(dx + 1, yNiveau, dy + 1);
-            glm::vec3 v4 = glm::vec3(dx, yNiveau, dy + 1);
-
-            // First triangle
-            vector1.push_back(v1);
-            vector1.push_back(v2);
-            vector1.push_back(v3);
-
-            // Second triangle
-            vector1.push_back(v1);
-            vector1.push_back(v3);
-            vector1.push_back(v4);
+    for (int y = 0; y < i; y++) {
+        for (int x = 0; x < i; x++) {
+            vertices.push_back(glm::vec3((float)x / (i - 1), yNiveau, (float)y / (i - 1)));
+            if (x < i - 1 && y < i - 1) {
+                int topLeft = y * i + x;
+                int topRight = topLeft + 1;
+                int bottomLeft = (y + 1) * i + x;
+                int bottomRight = bottomLeft + 1;
+                indices.push_back(topLeft);
+                indices.push_back(bottomLeft);
+                indices.push_back(topRight);
+                indices.push_back(topRight);
+                indices.push_back(bottomLeft);
+                indices.push_back(bottomRight);
+            }
         }
     }
 }
-
