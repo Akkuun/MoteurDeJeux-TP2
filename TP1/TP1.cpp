@@ -18,12 +18,14 @@ GLFWwindow *window;
 #include <iostream>
 
 using namespace glm;
+using namespace std;
 
 #include <common/shader.hpp>
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
 void processInput(GLFWwindow *window);
+void creationTerrain(std::vector<glm::vec3> &vector1, int i);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -116,9 +118,12 @@ int main(void) {
     std::vector<std::vector<unsigned short> > triangles;
     std::vector<glm::vec3> indexed_vertices;
 
-    //Chargement du fichier de maillage
-    std::string filename("suzanne.off");
-    loadOFF(filename, indexed_vertices, indices, triangles);
+//    //Chargement du fichier de maillage
+//    std::string filename("chair.off");
+//    loadOFF(filename, indexed_vertices, indices, triangles);
+
+    // Création de la géométrie via une fonction
+    creationTerrain(indexed_vertices, 16);
 
     // Load it into a VBO
 
@@ -167,15 +172,12 @@ int main(void) {
         /*****************TODO***********************/
         // Model matrix : an identity matrix (model will be at the origin) then change
         glm::mat4 model = glm::mat4(1.0f);
-
-// View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
+        // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
         glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
-
-// Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+        // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-
         // Send our transformation to the currently bound shader,
-// in the "Model View Projection" to the shader uniforms
+        // in the "Model View Projection" to the shader uniforms
         GLuint MatrixID = glGetUniformLocation(programID, "MVP");
         glm::mat4 MVP = projection * view * model;
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -258,6 +260,8 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera_position -= cameraSpeed * camera_up;
 
+    cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
+
 
 }
 
@@ -268,3 +272,28 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
+//fonction créant le maillage d'un terrain de taille i x i
+void creationTerrain(std::vector<glm::vec3> &vector1, int i) {
+    // Create a rectangular grid of size i x i
+    int yNiveau = 0;
+    // Create the vertices
+    for (unsigned int dx = 0; dx < i; dx++) {
+        for (unsigned int dy = 0; dy < i; dy++) {
+            glm::vec3 v1 = glm::vec3(dx, yNiveau, dy);
+            glm::vec3 v2 = glm::vec3(dx + 1, yNiveau, dy);
+            glm::vec3 v3 = glm::vec3(dx + 1, yNiveau, dy + 1);
+            glm::vec3 v4 = glm::vec3(dx, yNiveau, dy + 1);
+
+            // First triangle
+            vector1.push_back(v1);
+            vector1.push_back(v2);
+            vector1.push_back(v3);
+
+            // Second triangle
+            vector1.push_back(v1);
+            vector1.push_back(v3);
+            vector1.push_back(v4);
+        }
+    }
+}
+
