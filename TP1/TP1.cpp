@@ -25,6 +25,7 @@ using namespace std;
 #include <common/vboindexer.hpp>
 
 void processInput(GLFWwindow *window);
+
 void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i);
 
 // settings
@@ -210,7 +211,7 @@ int main(void) {
         // Draw the triangles !
         glDrawElements(
                 GL_TRIANGLES,      // mode
-                indices.size()*3,    // count
+                indices.size() * 3,    // count
                 GL_UNSIGNED_SHORT,   // type
                 (void *) 0           // element array buffer offset
         );
@@ -248,24 +249,37 @@ void processInput(GLFWwindow *window) {
     float cameraSpeed = 2.5 * deltaTime;
     // Zoom In
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera_position += cameraSpeed * camera_target;
+        if(camera_position.z>2.8f) camera_position += cameraSpeed * camera_target;
     // Zoom Out
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         camera_position -= cameraSpeed * camera_target;
     // Left
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+
+    if(camera_position.x>0.0f)   camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+    }
     // Right
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+
+        if(camera_position.x<1.7f) camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+    }
     //Up
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         camera_position += cameraSpeed * camera_up;
     //Down
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        camera_position -= cameraSpeed * camera_up;
+    //we clamp to 0 the y value of the camera position to avoid going under the terrain
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        //make sure that the camera won't go bellow 0.5f
 
-    cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
+        if (camera_position.y > 0.5f) {
+            camera_position -= cameraSpeed * camera_up;
+        }
+
+
+    }
+    cout << camera_position.x << " " << camera_position.y << " " << camera_position.z << endl;
 
 
 }
@@ -277,16 +291,18 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-//fonction créant le maillage d'un terrain de taille i x i
+
 void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i) {
-    int yNiveau = 0;
-    for (int y = 0; y < i; y++) {
-        for (int x = 0; x < i; x++) {
-            vertices.push_back(glm::vec3((float)x / (i - 1), yNiveau, (float)y / (i - 1)));
-            if (x < i - 1 && y < i - 1) {
-                int topLeft = y * i + x;
+    float step = 1.0f / i;
+    for (int y = 0; y <= i; ++y) {
+        for (int x = 0; x <= i; ++x) {
+            // Place the vertices of the terrain
+            vertices.push_back(glm::vec3(x * step, 0.0f, y * step));
+            if (x < i && y < i) {
+                // Transform 2D coord to 1D for storing it in an array
+                int topLeft = y * (i + 1) + x;
                 int topRight = topLeft + 1;
-                int bottomLeft = (y + 1) * i + x;
+                int bottomLeft = (y + 1) * (i + 1) + x;
                 int bottomRight = bottomLeft + 1;
                 indices.push_back(topLeft);
                 indices.push_back(bottomLeft);
