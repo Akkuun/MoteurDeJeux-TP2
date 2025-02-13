@@ -124,45 +124,36 @@ int main(void) {
     std::vector<std::vector<unsigned short> > triangles;
     std::vector<glm::vec3> indexed_vertices;
 
-//    //Chargement du fichier de maillage
-//    std::string filename("chair.off");
-//    loadOFF(filename, indexed_vertices, indices, triangles);
-// Création de la géométrie via une fonction
 
     // Create and bind the texture coordinate buffer
     std::vector<glm::vec2> texCoords;
     creationTerrain(indexed_vertices, texCoords, indices, 16);
 
+    // creation du buffer pour les coordonnées de texture
     GLuint texCoordBuffer;
     glGenBuffers(1, &texCoordBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
     glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(glm::vec2), &texCoords[0], GL_STATIC_DRAW);
 
-// Enable the texture coordinate attribute
+    // creation du buffer pour les sommets
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 
-// Load it into a VBO
+    //chargement des sommets dans la carte graphique
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
 
 
-// Print the vertex buffer data
-//    for (const auto& vertex : indexed_vertices) {
-//        std::cout << "Vertex: (" << vertex.x << ", " << vertex.y << ", " << vertex.z << ")" << std::endl;
-//    }
-
-// Generate a buffer for the indices as well
+    // chargement des indices dans la carte graphique
     GLuint elementbuffer;
     glGenBuffers(1, &elementbuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
 
-    // Load the texture
     // Load the texture
     OCTET *ImgIn;
     int nH, nW;
@@ -170,24 +161,22 @@ int main(void) {
     int nTaille = nH * nW;
     allocation_tableau(ImgIn, OCTET, nTaille * 3);
     lire_image_ppm("../img/vegetation.ppm", ImgIn, nH * nW);
-
+    // création de la texture OpenGL
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW, nH, 0, GL_RGB, GL_UNSIGNED_BYTE, ImgIn);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-// Set the texture wrapping parameters
+    //parametres de la texture : filtrage et répétition
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-// Set the texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Bind the texture
+    //Buffer pour la texture, on en a besoin pour la transmettre au shader, via la variable myTextureSampler qui est un uniforme
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     GLuint textureID = glGetUniformLocation(programID, "myTextureSampler");
@@ -223,14 +212,13 @@ int main(void) {
 
 
         /*****************TODO***********************/
-        // Model matrix : an identity matrix (model will be at the origin) then change
+        // Model matrix : Matrice d'origine
         glm::mat4 model = glm::mat4(1.0f);
-        // View matrix : camera/view transformation lookat() utiliser camera_position camera_target camera_up
+        // View matrix : Matrice de vue qui dépend de la position de la caméra et de la direction de la caméra
         glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-        // Send our transformation to the currently bound shader,
-        // in the "Model View Projection" to the shader uniforms
+        //envoi de la matrice de transformation à la carte graphique (shader)
         GLuint MatrixID = glGetUniformLocation(programID, "MVP");
         glm::mat4 MVP = projection * view * model;
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -339,6 +327,12 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+//fonction qui :
+// - crée un terrain de taille 1x1
+// - le découpe en i x i carrés
+// vertices -> tableau de sommets
+// texCoords -> tableau de coordonnées de texture UV
+// indices -> tableau d'indices des sommets pour les triangles
 void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &texCoords, std::vector<unsigned short> &indices, int i) {
     float step = 1.0f / (i - 1);
     for (int y = 0; y < i; ++y) {
