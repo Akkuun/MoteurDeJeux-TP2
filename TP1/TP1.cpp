@@ -32,7 +32,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-glm::vec3 camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 camera_position = glm::vec3(0.413079f, 0.819036f, 3.38097f);
 glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 camera_up = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -135,9 +135,9 @@ int main(void) {
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
 
 // Print the vertex buffer data
-    for (const auto& vertex : indexed_vertices) {
-        std::cout << "Vertex: (" << vertex.x << ", " << vertex.y << ", " << vertex.z << ")" << std::endl;
-    }
+//    for (const auto& vertex : indexed_vertices) {
+//        std::cout << "Vertex: (" << vertex.x << ", " << vertex.y << ", " << vertex.z << ")" << std::endl;
+//    }
 
 // Generate a buffer for the indices as well
     GLuint elementbuffer;
@@ -265,7 +265,7 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera_position -= cameraSpeed * camera_up;
 
-    //cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
+    cout<<camera_position.x<<" "<<camera_position.y<<" "<<camera_position.z<<endl;
 
 
 }
