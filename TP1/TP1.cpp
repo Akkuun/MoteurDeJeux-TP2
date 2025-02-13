@@ -117,7 +117,7 @@ int main(void) {
     std::vector<glm::vec3> indexed_vertices;
 
     //Chargement du fichier de maillage
-    std::string filename("chair.off");
+    std::string filename("suzanne.off");
     loadOFF(filename, indexed_vertices, indices, triangles);
 
     // Load it into a VBO
