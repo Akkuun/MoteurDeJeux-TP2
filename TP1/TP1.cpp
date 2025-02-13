@@ -23,11 +23,11 @@ using namespace std;
 #include <common/shader.hpp>
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
+#include <common/image_utils.h>
 
 void processInput(GLFWwindow *window);
 
-void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i);
-
+void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &texCoords, std::vector<unsigned short> &indices, int i);
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -105,6 +105,8 @@ int main(void) {
     glGenVertexArrays(1, &VertexArrayID);
     glBindVertexArray(VertexArrayID);
 
+
+
     // Create and compile our GLSL program from the shaders
     GLuint programID = LoadShaders("vertex_shader.glsl", "fragment_shader.glsl");
     if (programID == 0) {
@@ -127,13 +129,27 @@ int main(void) {
 //    loadOFF(filename, indexed_vertices, indices, triangles);
 // Création de la géométrie via une fonction
 
-    creationTerrain(indexed_vertices, indices, 16);
+    // Create and bind the texture coordinate buffer
+    std::vector<glm::vec2> texCoords;
+    creationTerrain(indexed_vertices, texCoords, indices, 16);
+
+    GLuint texCoordBuffer;
+    glGenBuffers(1, &texCoordBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
+    glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(glm::vec2), &texCoords[0], GL_STATIC_DRAW);
+
+// Enable the texture coordinate attribute
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
 
 // Load it into a VBO
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
+
 
 // Print the vertex buffer data
 //    for (const auto& vertex : indexed_vertices) {
@@ -145,6 +161,37 @@ int main(void) {
     glGenBuffers(1, &elementbuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
+
+    // Load the texture
+    // Load the texture
+    OCTET *ImgIn;
+    int nH, nW;
+    lire_nb_lignes_colonnes_image_ppm("../img/vegetation.ppm", &nH, &nW);
+    int nTaille = nH * nW;
+    allocation_tableau(ImgIn, OCTET, nTaille * 3);
+    lire_image_ppm("../img/vegetation.ppm", ImgIn, nH * nW);
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW, nH, 0, GL_RGB, GL_UNSIGNED_BYTE, ImgIn);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+// Set the texture wrapping parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+// Set the texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    GLuint textureID = glGetUniformLocation(programID, "myTextureSampler");
+    glUniform1i(textureID, 0);
 
 // Get a handle for our "LightPosition" uniform
     glUseProgram(programID);
@@ -279,7 +326,7 @@ void processInput(GLFWwindow *window) {
 
 
     }
-    cout << camera_position.x << " " << camera_position.y << " " << camera_position.z << endl;
+    //cout << camera_position.x << " " << camera_position.y << " " << camera_position.z << endl;
 
 
 }
@@ -292,17 +339,16 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, int i) {
-    float step = 1.0f / i;
-    for (int y = 0; y <= i; ++y) {
-        for (int x = 0; x <= i; ++x) {
-            // Place the vertices of the terrain
+void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &texCoords, std::vector<unsigned short> &indices, int i) {
+    float step = 1.0f / (i - 1);
+    for (int y = 0; y < i; ++y) {
+        for (int x = 0; x < i; ++x) {
             vertices.push_back(glm::vec3(x * step, 0.0f, y * step));
-            if (x < i && y < i) {
-                // Transform 2D coord to 1D for storing it in an array
-                int topLeft = y * (i + 1) + x;
+            texCoords.push_back(glm::vec2(x * step, y * step));
+            if (x < i - 1 && y < i - 1) {
+                int topLeft = y * i + x;
                 int topRight = topLeft + 1;
-                int bottomLeft = (y + 1) * (i + 1) + x;
+                int bottomLeft = (y + 1) * i + x;
                 int bottomRight = bottomLeft + 1;
                 indices.push_back(topLeft);
                 indices.push_back(bottomLeft);
