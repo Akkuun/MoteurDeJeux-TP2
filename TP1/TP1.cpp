@@ -51,7 +51,7 @@ float lastFrame = 0.0f;
 float angle = 0.;
 float zoom = 1.;
 
-glm::mat4 model2 = glm::mat4(1.0f);
+glm::mat3 axeMatrix = glm::mat3(0.0f);
 
 OCTET *HeightMap;
 
@@ -259,18 +259,13 @@ int main(void) {
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
         // rotation de la surface , 0 de base et dans ETAT rotation on change la valeur de l'angle
-        model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        if (rotation_Axis == 'x' && ETAT_ACTIF == ETAT_ORBITAL) {
-            //change the v of model
-            model = model2;
-        } else if (rotation_Axis == 'y' && ETAT_ACTIF == ETAT_ORBITAL) {
-            //change the v of model
-            model = model2;
+        if (ETAT_ACTIF == ETAT_ROTATION) {
+            if (rotation_Axis == 'x') model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+            if(rotation_Axis == 'y') model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
+        } else if (ETAT_ACTIF == ETAT_ORBITAL) {
+            if (rotation_Axis == 'x') model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
+            if (rotation_Axis == 'y') model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
         }
-
-
-
 
         //envoi de la matrice de transformation à la carte graphique (shader)
         GLuint MatrixID = glGetUniformLocation(programID, "MVP");
@@ -278,9 +273,6 @@ int main(void) {
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
         /****************************************/
-
-
-
 
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
@@ -328,6 +320,7 @@ int main(void) {
 }
 
 
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window) {
@@ -421,10 +414,23 @@ void processInput(GLFWwindow *window) {
         cout << "ETAT ROTATION" << endl;
         float coef = 1;
         // Define the rotation speed
-        rotationSurfacespeed = 30.0f; // on passe notre vitesse pour la rotation
 
-        // Rotate the surface continuously
-        angle += rotationSurfacespeed * deltaTime * coef;
+
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
+            rotationSurfacespeed += 10.0f;
+            key_pressedUp = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
+            key_pressedUp = false;
+        }
+        // DOWN -> DECREASE SPEED
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
+            rotationSurfacespeed -= 10.0f;
+            key_pressedDown = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+            key_pressedDown = false;
+        }
 
         // Change direction based on key press
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
@@ -433,8 +439,9 @@ void processInput(GLFWwindow *window) {
         if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
             coef = -1;
         }
-    }
-    else if (ETAT_ACTIF == ETAT_ORBITAL) {
+        // Rotate the surface continuously
+        angle += rotationSurfacespeed * deltaTime * coef;
+    } else if (ETAT_ACTIF == ETAT_ORBITAL) {
 
         //camera orbitale
         // up -> AUGMENTE LA vitesse
@@ -465,19 +472,21 @@ void processInput(GLFWwindow *window) {
         }
         // LEFT -> ROTATE ON X AXIS
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            angle += rotationSurfacespeed * deltaTime;
             rotation_Axis = 'x';
         }
         // RIGHT -> ROTATE ON Y AXIS
         if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            angle += rotationSurfacespeed * deltaTime;
             rotation_Axis = 'y';
         }
-        if (rotation_Axis == 'x') {
-            model2 = glm::rotate(model2, glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
-        } else if (rotation_Axis == 'y') {
-            model2 = glm::rotate(model2, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-        }
+
+        cout << "ROTATION AXIS : " << rotation_Axis << endl;
+        cout << rotation_Axis << endl;
+        // Rotate the surface continuously
+
     }
-    rotation_Axis = 'none';
+
 
 
 }
