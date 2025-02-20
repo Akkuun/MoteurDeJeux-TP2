@@ -60,6 +60,7 @@ int ETAT_CLAMP = 0;
 
 int ETAT_LIBRE = 1;
 int ETAT_ROTATION = 2;
+int ETAT_ORBITAL = 3;
 
 /*******************************************************************************/
 
@@ -318,7 +319,7 @@ void processInput(GLFWwindow *window) {
 
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && !cKeyPressed) {
         cout << "ETAT ACTIF : " << ETAT_ACTIF << endl;
-        ETAT_ACTIF = (ETAT_ACTIF + 1) % 3;
+        ETAT_ACTIF = (ETAT_ACTIF + 1) % 4;
         cKeyPressed = true;
     }
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_RELEASE) {
@@ -402,9 +403,30 @@ void processInput(GLFWwindow *window) {
     }
     else if(ETAT_ACTIF==ETAT_ROTATION){
         cout << "ETAT ROTATION" << endl;
+        float coef = 1;
         // Define the rotation speed
-       rotationSurfacespeed =30.0f;//on passe notre vitesse pour la rotation
-        // Rotate the surface
+        rotationSurfacespeed = 30.0f; // on passe notre vitesse pour la rotation
+
+        // Rotate the surface continuously
+        angle += rotationSurfacespeed * deltaTime * coef;
+
+        // Change direction based on key press
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            coef = 1;
+        }
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            coef = -1;
+        }
+    }
+    else if(ETAT_ACTIF == ETAT_ORBITAL){
+        //camera orbitale
+
+
+        cout << "ETAT ORBITAL" << endl;
+        // Define the rotation speed
+        rotationSurfacespeed = 30.0f; // Set initial rotation speed
+
+        // Rotate the surface on the x-axis
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
             angle += rotationSurfacespeed * deltaTime;
         }
@@ -412,7 +434,21 @@ void processInput(GLFWwindow *window) {
             angle -= rotationSurfacespeed * deltaTime;
         }
 
+        // Rotate the surface on the y-axis
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            camera_position.y += rotationSurfacespeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            camera_position.y -= rotationSurfacespeed * deltaTime;
+        }
 
+        // Adjust rotation speed
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            rotationSurfacespeed += 10.0f * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            rotationSurfacespeed -= 10.0f * deltaTime;
+        }
     }
 
 
@@ -444,7 +480,8 @@ void creationTerrain(std::vector<glm::vec3> &vertices,
             //get height from the heightmap.pgm
             float height = HeightMap[(y * i + x)] / 255.0f ; // Scale height for smoother terrain
 
-            vertices.push_back(glm::vec3(x * step, height, y * step));
+            // Adjust the vertex position to center the terrain at (0.5, 0.5)
+            vertices.push_back(glm::vec3(x * step - 0.5f, height, y * step - 0.5f));
             texCoords.push_back(glm::vec2(x * step, y * step));
             if (x < i - 1 && y < i - 1) {
                 int topLeft = y * i + x;
