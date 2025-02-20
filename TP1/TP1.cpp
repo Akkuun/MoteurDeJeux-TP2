@@ -281,13 +281,13 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
 
     // Camera movement
-    float cameraSpeed = 2.5 * deltaTime;
+    float cameraSpeed = 2.5f * deltaTime;
     // Zoom In
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         if(camera_position.z>2.8f) camera_position += cameraSpeed * camera_target;
     // Zoom Out
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera_position -= cameraSpeed * camera_target;
+        if(camera_position.z<7.0f) camera_position -= cameraSpeed * camera_target;
     // Left
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
 
@@ -339,7 +339,6 @@ void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &t
         for (int x = 0; x < i; ++x) {
             //random height
             float height = 0.05f * (rand() % 100) / 100.0f;
-
             vertices.push_back(glm::vec3(x * step, height, y * step));
             texCoords.push_back(glm::vec2(x * step, y * step));
             if (x < i - 1 && y < i - 1) {
