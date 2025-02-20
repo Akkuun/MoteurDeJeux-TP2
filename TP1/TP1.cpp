@@ -27,7 +27,12 @@ using namespace std;
 
 void processInput(GLFWwindow *window);
 
-void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &texCoords, std::vector<unsigned short> &indices, int i);
+void creationTerrain(
+        std::vector<glm::vec3> &vertices,
+        std::vector<glm::vec2> &texCoords,
+        std::vector<unsigned short> &indices,
+        int i,
+        OCTET *HeightMap);
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -44,6 +49,17 @@ float lastFrame = 0.0f;
 //rotation
 float angle = 0.;
 float zoom = 1.;
+
+OCTET *HeightMap;
+
+float rotationSurfacespeed = 0.0f;
+
+static bool cKeyPressed = false;
+int ETAT_ACTIF = 0;
+int ETAT_CLAMP = 0;
+
+int ETAT_LIBRE = 1;
+int ETAT_ROTATION = 2;
 
 /*******************************************************************************/
 
@@ -125,9 +141,17 @@ int main(void) {
     std::vector<glm::vec3> indexed_vertices;
 
 
+    //read HEIGHTMAP
+
+    int nH2, nW2;
+    lire_nb_lignes_colonnes_image_pgm("../img/Heightmap_Rocky.pgm", &nH2, &nW2);
+    int nTaille2 = nH2 * nW2;
+    allocation_tableau(HeightMap, OCTET, nTaille2);
+    lire_image_pgm("../img/Heightmap_Rocky.pgm", HeightMap, nH2 * nW2);
+
     // Create and bind the texture coordinate buffer
     std::vector<glm::vec2> texCoords;
-    creationTerrain(indexed_vertices, texCoords, indices, 16);
+    creationTerrain(indexed_vertices, texCoords, indices, 40, HeightMap);
 
     // creation du buffer pour les coordonnées de texture
     GLuint texCoordBuffer;
@@ -161,6 +185,13 @@ int main(void) {
     int nTaille = nH * nW;
     allocation_tableau(ImgIn, OCTET, nTaille * 3);
     lire_image_ppm("../img/vegetation.ppm", ImgIn, nH * nW);
+
+
+
+
+
+
+
     // création de la texture OpenGL
     GLuint texture;
     glGenTextures(1, &texture);
@@ -218,6 +249,11 @@ int main(void) {
         glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
         // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+        // rotation de la surface , 0 de base et dans ETAT rotation on change la valeur de l'angle
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+
+
         //envoi de la matrice de transformation à la carte graphique (shader)
         GLuint MatrixID = glGetUniformLocation(programID, "MVP");
         glm::mat4 MVP = projection * view * model;
@@ -277,44 +313,108 @@ int main(void) {
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window) {
+    float cameraSpeed = 2.5f * deltaTime;
+    //change the state of the camera
+
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && !cKeyPressed) {
+        cout << "ETAT ACTIF : " << ETAT_ACTIF << endl;
+        ETAT_ACTIF = (ETAT_ACTIF + 1) % 3;
+        cKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_RELEASE) {
+        cKeyPressed = false;
+    }
+    //close the window
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // Camera movement
-    float cameraSpeed = 2.5f * deltaTime;
-    // Zoom In
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        if(camera_position.z>2.8f) camera_position += cameraSpeed * camera_target;
-    // Zoom Out
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        if(camera_position.z<7.0f) camera_position -= cameraSpeed * camera_target;
-    // Left
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
 
-    if(camera_position.x>0.0f)   camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+    if(ETAT_ACTIF==ETAT_CLAMP) {
+        cout<<"ETAT CLAMP"<<endl;
+        // Camera movement
+        // Zoom In
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            if (camera_position.z > 2.8f) camera_position += cameraSpeed * camera_target;
+        // Zoom Out
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            if (camera_position.z < 7.0f) camera_position -= cameraSpeed * camera_target;
+        // Left
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+
+            if (camera_position.x > 0.0f)
+                camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+        }
+        // Right
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+
+            if (camera_position.x < 1.7f)
+                camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+        }
+        //Up
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            camera_position += cameraSpeed * camera_up;
+        //Down
+        //we clamp to 0 the y value of the camera position to avoid going under the terrain
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            //make sure that the camera won't go bellow 0.5f
+
+            if (camera_position.y > 0.5f) {
+                camera_position -= cameraSpeed * camera_up;
+            }
+        }
+    }
+    //ETAT LIBRE
+    else if(ETAT_ACTIF==ETAT_LIBRE){
+        cout<<"ETAT LIBRE"<<endl;
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            camera_position += cameraSpeed * camera_target;
+        // Zoom Out
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+           camera_position -= cameraSpeed * camera_target;
+        // Left
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+
+
+                camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+        }
+        // Right
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+
+
+                camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+
+        }
+        //Up
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            camera_position += cameraSpeed * camera_up;
+        //Down
+        //we clamp to 0 the y value of the camera position to avoid going under the terrain
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            //make sure that the camera won't go bellow 0.5f
+                camera_position -= cameraSpeed * camera_up;
+
+        }
 
     }
-    // Right
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-
-        if(camera_position.x<1.7f) camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
-
-    }
-    //Up
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        camera_position += cameraSpeed * camera_up;
-    //Down
-    //we clamp to 0 the y value of the camera position to avoid going under the terrain
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        //make sure that the camera won't go bellow 0.5f
-
-        if (camera_position.y > 0.5f) {
-            camera_position -= cameraSpeed * camera_up;
+    else if(ETAT_ACTIF==ETAT_ROTATION){
+        cout << "ETAT ROTATION" << endl;
+        // Define the rotation speed
+       rotationSurfacespeed =30.0f;//on passe notre vitesse pour la rotation
+        // Rotate the surface
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            angle += rotationSurfacespeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            angle -= rotationSurfacespeed * deltaTime;
         }
 
 
     }
-    //cout << camera_position.x << " " << camera_position.y << " " << camera_position.z << endl;
+
 
 
 }
@@ -333,12 +433,17 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 // vertices -> tableau de sommets
 // texCoords -> tableau de coordonnées de texture UV
 // indices -> tableau d'indices des sommets pour les triangles
-void creationTerrain(std::vector<glm::vec3> &vertices, std::vector<glm::vec2> &texCoords, std::vector<unsigned short> &indices, int i) {
+void creationTerrain(std::vector<glm::vec3> &vertices,
+                     std::vector<glm::vec2> &texCoords,
+                     std::vector<unsigned short> &indices,
+                     int i,
+                     OCTET *HeightMap) {
     float step = 1.0f / (i - 1);
     for (int y = 0; y < i; ++y) {
         for (int x = 0; x < i; ++x) {
-            //random height
-            float height = 0.05f * (rand() % 100) / 100.0f;
+            //get height from the heightmap.pgm
+            float height = HeightMap[(y * i + x)] / 255.0f ; // Scale height for smoother terrain
+
             vertices.push_back(glm::vec3(x * step, height, y * step));
             texCoords.push_back(glm::vec2(x * step, y * step));
             if (x < i - 1 && y < i - 1) {
