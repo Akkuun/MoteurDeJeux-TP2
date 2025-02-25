@@ -14,12 +14,23 @@ void main() {
     vec3 rockColor = texture(textureRock, UV).rgb;
     vec3 snowColor = texture(textureSnow, UV).rgb;
 
-    // Mix textures based on height
-    if (height < 0.33) {
-        color = mix(heightMapColor, rockColor, height / 0.33);
-    } else if (height < 0.66) {
-        color = mix(rockColor, snowColor, (height - 0.33) / 0.33);
-    } else {
+    //without mix
+
+    if(height < 0.33){
+        color = heightMapColor;
+    }else if(height < 0.66){
+        color = rockColor;
+    }
+    else{
         color = snowColor;
     }
+
+//    // Mix textures based on height
+//    if (height < 0.33) {
+//        color = mix(heightMapColor, rockColor, height / 0.33);
+//    } else if (height < 0.66) {
+//        color = mix(rockColor, snowColor, (height - 0.33) / 0.33);
+//    } else {
+//        color = snowColor;
+//    }
 }

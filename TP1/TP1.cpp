@@ -84,8 +84,8 @@ void updateTerrain() {
     create_plan_textured(resolution, resolution, indexed_vertices, indices, texCoords, HeightMapTexture);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-   // glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
 
@@ -195,11 +195,10 @@ void processInput(GLFWwindow *window) {
         }
 
     } else if (ETAT_ACTIF == ETAT_ROTATION) {
-//        cout << "ETAT ROTATION" << endl;
-        float coef = 1;
         // Define the rotation speed
+        float coef = 1.0f;
 
-
+        // Increase speed
         if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
             rotationSurfacespeed += 10.0f;
             key_pressedUp = true;
@@ -207,7 +206,8 @@ void processInput(GLFWwindow *window) {
         if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
             key_pressedUp = false;
         }
-        // DOWN -> DECREASE SPEED
+
+        // Decrease speed
         if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
             rotationSurfacespeed -= 10.0f;
             key_pressedDown = true;
@@ -218,13 +218,17 @@ void processInput(GLFWwindow *window) {
 
         // Change direction based on key press
         if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            coef = 1;
+            coef = 1.0f;
         }
         if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            coef = -1;
+            coef = -1.0f;
         }
-        // Rotate the surface continuously
+
+        // la surface tourne continuellement sur elle meme
         angle += rotationSurfacespeed * deltaTime * coef;
+
+        cout << "ANGLE : " << angle << endl;
+
     } else if (ETAT_ACTIF == ETAT_ORBITAL) {
 
         //camera orbitale
@@ -514,8 +518,10 @@ int main(void) {
         // Compute the MVP matrix from keyboard and mouse input
         glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
         glm::mat4 View = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
-        glm::mat4 Model = glm::mat4(1.0f);
-        glm::mat4 MVP = Projection * View * Model;
+        glm::mat4 Model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
+
+
         // Send our transformation to the currently bound shader,
         // in the "MVP" uniform
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
