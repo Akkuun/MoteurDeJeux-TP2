@@ -10,11 +10,20 @@ uniform sampler2D rockTextureSampler;
 uniform sampler2D snowTextureSampler;
 
 void main() {
-        if (vertexHeight < 0.3) {
-                color = texture(grassTextureSampler, UV).rgb;
-        } else if (vertexHeight < 0.6) {
-                color = texture(rockTextureSampler, UV).rgb;
+        vec3 grassColor = texture(grassTextureSampler, UV).rgb;
+        vec3 rockColor = texture(rockTextureSampler, UV).rgb;
+        vec3 snowColor = texture(snowTextureSampler, UV).rgb;
+
+        float height = vertexHeight;
+
+        vec3 finalColor;
+        if (height < 0.3) {
+                finalColor = grassColor;
+        } else if (height < 0.6) {
+                finalColor = mix(grassColor, rockColor, (height - 0.3) / 0.3);
         } else {
-                color = texture(snowTextureSampler, UV).rgb;
+                finalColor = mix(rockColor, snowColor, (height - 0.6) / 0.4);
         }
+
+        color = finalColor;
 }
