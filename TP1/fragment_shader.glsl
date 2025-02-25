@@ -1,23 +1,24 @@
 #version 330 core
 
 in vec2 UV;
-in float vertexHeight;
+in float height;
 
-out vec4 color;
+out vec3 color;
 
-uniform sampler2D grassTextureSampler;
-uniform sampler2D rockTextureSampler;
-uniform sampler2D snowTextureSampler;
+uniform sampler2D textureHeightMap;
+uniform sampler2D textureRock;
+uniform sampler2D textureSnow;
 
 void main() {
-    vec4 grassColor = texture(grassTextureSampler, UV);
-    vec4 rockColor = texture(rockTextureSampler, UV);
-    vec4 snowColor = texture(snowTextureSampler, UV);
+    vec3 heightMapColor = texture(textureHeightMap, UV).rgb;
+    vec3 rockColor = texture(textureRock, UV).rgb;
+    vec3 snowColor = texture(textureSnow, UV).rgb;
 
-    if (vertexHeight < 0.33) {
-        color = grassColor;
-    } else if (vertexHeight < 0.66) {
-        color = rockColor;
+    // Mix textures based on height
+    if (height < 0.33) {
+        color = mix(heightMapColor, rockColor, height / 0.33);
+    } else if (height < 0.66) {
+        color = mix(rockColor, snowColor, (height - 0.33) / 0.33);
     } else {
         color = snowColor;
     }

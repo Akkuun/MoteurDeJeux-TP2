@@ -84,8 +84,8 @@ void updateTerrain() {
     create_plan_textured(resolution, resolution, indexed_vertices, indices, texCoords, HeightMapTexture);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
+   // glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
 
@@ -424,6 +424,7 @@ int main(void) {
     lire_image_pgm("../img/Heightmap_Rocky.pgm", HeightMap, nH2 * nW2);
 
 
+
     // BIND HEIGHTMAP TEXTURE
     HeightMapTexture.data = HeightMap;
     HeightMapTexture.w = nW2;
@@ -522,9 +523,27 @@ int main(void) {
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+
+        // 2nd attribute buffer : UVs
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+
+
         // Draw the triangles !
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, (void *) 0);
         glDisableVertexAttribArray(0);
+        glEnableVertexAttribArray(2);  // Attribut 2 pour vertexHeight
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+
+        glUniform1i(glGetUniformLocation(programID, "textureHeightMap"), 0);
+        glUniform1i(glGetUniformLocation(programID, "textureRock"), 1);
+        glUniform1i(glGetUniformLocation(programID, "textureSnow"), 2);
+
+
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
