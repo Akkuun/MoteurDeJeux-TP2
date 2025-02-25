@@ -39,8 +39,6 @@ const int ETAT_CLAMP = 0, ETAT_LIBRE = 1, ETAT_ROTATION = 2, ETAT_ORBITAL = 3;
 char rotation_Axis = 'x';
 
 
-
-
 // === Structures ===
 struct Texture {
     OCTET *data;
@@ -58,8 +56,9 @@ struct Vertex {
 // === Prototypes des Fonctions ===
 
 void processInput(GLFWwindow *window);
-void create_plan_textured(int n,int m,std::vector< glm::vec3 > & vertices ,std::vector< unsigned short > & indices,std::vector<glm::vec2> &uvs,Texture &heightMap);
 
+void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices,
+                          std::vector<glm::vec2> &uvs, Texture &heightMap);
 
 
 // === Données ===
@@ -93,6 +92,7 @@ void updateTerrain() {
     glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
     glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(vec2), &texCoords[0], GL_STATIC_DRAW);
 }
+
 void processInput(GLFWwindow *window) {
     float cameraSpeed = 2.5f * deltaTime;
     //change the state of the camera
@@ -273,12 +273,21 @@ void processInput(GLFWwindow *window) {
 
 
 }
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
+void computeMinMaxHeight(const std::vector<glm::vec3> &vertices, float &minHeight, float &maxHeight) {
+    minHeight = FLT_MAX;
+    maxHeight = -FLT_MAX;
+    for (const auto &v: vertices) {
+        if (v.y < minHeight) minHeight = v.y;
+        if (v.y > maxHeight) maxHeight = v.y;
+    }
+}
 
 //fonction qui :
 // - crée un terrain de taille 1x1
@@ -286,7 +295,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 // vertices -> tableau de sommets
 // texCoords -> tableau de coordonnées de texture UV
 // indices -> tableau d'indices des sommets pour les triangles
-void create_plan_textured( int n, int m, std::vector< glm::vec3 > & vertices , std::vector< unsigned short > & indices, std::vector<glm::vec2> &uvs, Texture &heightMap) {
+void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices,
+                          std::vector<glm::vec2> &uvs, Texture &heightMap) {
 
     vertices.clear();
     indices.clear();
@@ -294,14 +304,15 @@ void create_plan_textured( int n, int m, std::vector< glm::vec3 > & vertices , s
     float x, y, z, u, v;
     float zmax = -1000;
     float zmin = 1000;
-    for( int i = 0 ; i < n ; ++i ) {
-        for( int j = 0 ; j < m ; ++j ) {
-            x = float(i)/n-0.5;
-            z = float(j)/m-0.5;
-            u = float(i)/n;
-            v = 1.f - float(j)/m;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            x = float(i) / n - 0.5;
+            z = float(j) / m - 0.5;
+            u = float(i) / n;
+            v = 1.f - float(j) / m;
             //y = heightMap.data[u * heightMap.w+ v * heightMap.h * heightMap.w] / 255.f * 0.5;
-            y = heightMap.data[static_cast<int>(u * (heightMap.w - 1)) + static_cast<int>(v * (heightMap.h - 1)) * heightMap.w] / 255.f;
+            y = heightMap.data[static_cast<int>(u * (heightMap.w - 1)) +
+                               static_cast<int>(v * (heightMap.h - 1)) * heightMap.w] / 255.f;
             if (z > zmax) {
                 zmax = z;
             }
@@ -312,21 +323,26 @@ void create_plan_textured( int n, int m, std::vector< glm::vec3 > & vertices , s
             vertices.push_back(vertex);
             uvs.push_back(glm::vec2(u, v));
 
-            if (i < n-1 && j < m-1) {
-                indices.push_back(i*m+j);
-                indices.push_back((i+1)*m+j+1);
-                indices.push_back((i+1)*m+j);
+            if (i < n - 1 && j < m - 1) {
+                indices.push_back(i * m + j);
+                indices.push_back((i + 1) * m + j + 1);
+                indices.push_back((i + 1) * m + j);
 
-                indices.push_back(i*m+j);
-                indices.push_back(i*m+j+1);
-                indices.push_back((i+1)*m+j+1);
+                indices.push_back(i * m + j);
+                indices.push_back(i * m + j + 1);
+                indices.push_back((i + 1) * m + j + 1);
             }
         }
     }
 
+    float minHeight, maxHeight;
+    computeMinMaxHeight(vertices, minHeight, maxHeight);
+
     for (size_t i = 0; i < vertices.size(); i++) {
-        float height = vertices[i].y;  // Utiliser la coordonnée Y comme hauteur
-        vertexHeights.push_back(height);
+        float height = vertices[i].y;
+        float normalizedHeight = (height - minHeight) / (maxHeight - minHeight); // Valeur entre 0 et 1
+
+        texCoords.push_back(glm::vec2(vertices[i].x, normalizedHeight)); // Utiliser y pour v
     }
 }
 
@@ -436,158 +452,90 @@ int main(void) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
 
 
-
     glGenBuffers(1, &vertexHeightBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexHeightBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertexHeights.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(2);  // Attribut 2 pour vertexHeight
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, vertexHeightBuffer);
+//    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     //TEXTURES FOR THE HEIGHTMAP
-    int nH_grass,nW_grass;
+    int nH_grass, nW_grass;
     OCTET *grassImg;
     lire_nb_lignes_colonnes_image_ppm("../img/grass.ppm", &nH_grass, &nW_grass);
     allocation_tableau(grassImg, OCTET, nH_grass * nW_grass * 3);
     lire_image_ppm("../img/grass.ppm", grassImg, nH_grass * nW_grass);
 
     OCTET *rockImg;
-    int nH_rock,nW_rock;
+    int nH_rock, nW_rock;
     lire_nb_lignes_colonnes_image_ppm("../img/rock.ppm", &nH_rock, &nW_rock);
     allocation_tableau(rockImg, OCTET, nH_rock * nW_rock * 3);
     lire_image_ppm("../img/rock.ppm", rockImg, nH_rock * nW_rock);
 
     OCTET *snowImg;
-    int nH_snow,nW_snow;
+    int nH_snow, nW_snow;
     lire_nb_lignes_colonnes_image_ppm("../img/snowrocks.ppm", &nH_snow, &nW_snow);
     allocation_tableau(snowImg, OCTET, nH_snow * nW_snow * 3);
     lire_image_ppm("../img/snowrocks.ppm", snowImg, nH_snow * nW_snow);
 
-
-
-    GLuint grassTexture, rockTexture, snowTexture;
-    glGenTextures(1, &grassTexture);
-    glGenTextures(1, &rockTexture);
-    glGenTextures(1, &snowTexture);
-
+    //TEXTURE FOR THE HEIGHTMAP
+    GLuint textureID;
+    glGenTextures(1, &textureID);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, grassTexture);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW_grass, nH_grass, 0, GL_RGB, GL_UNSIGNED_BYTE, grassImg);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glUniform1i(glGetUniformLocation(programID, "textureHeightMap"), 0);
+
+    GLuint textureID2;
+    glGenTextures(1, &textureID2);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, rockTexture);
+    glBindTexture(GL_TEXTURE_2D, textureID2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW_rock, nH_rock, 0, GL_RGB, GL_UNSIGNED_BYTE, rockImg);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glUniform1i(glGetUniformLocation(programID, "textureRock"), 1);
+
+    GLuint textureID3;
+    glGenTextures(1, &textureID3);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, snowTexture);
+    glBindTexture(GL_TEXTURE_2D, textureID3);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW_snow, nH_snow, 0, GL_RGB, GL_UNSIGNED_BYTE, snowImg);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
-
-    glUniform1i(glGetUniformLocation(programID, "grassTextureSampler"), 0);
-    glUniform1i(glGetUniformLocation(programID, "rockTextureSampler"), 1);
-    glUniform1i(glGetUniformLocation(programID, "snowTextureSampler"), 2);
-
-
-// Pass the textures to the shader
-    GLuint grassTextureID = glGetUniformLocation(programID, "grassTextureSampler");
-    GLuint rockTextureID = glGetUniformLocation(programID, "rockTextureSampler");
-    GLuint snowTextureID = glGetUniformLocation(programID, "snowTextureSampler");
-    glUniform1i(grassTextureID, 0);
-    glUniform1i(rockTextureID, 1);
-    glUniform1i(snowTextureID, 2);
-
-
-
-
-    //parametres de la texture : filtrage et répétition
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-
-
-// Get a handle for our "LightPosition" uniform
-    glUseProgram(programID);
-    GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
-
-    // For speed computation
-    double lastTime = glfwGetTime();
-    int nbFrames = 0;
+    // Main loop
 
     do {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-        processInput(window);
-
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         // Use our shader
         glUseProgram(programID);
-
-        // Model matrix : Matrice d'origine
-        glm::mat4 model = glm::mat4(1.0f);
-        // View matrix : Matrice de vue qui dépend de la position de la caméra et de la direction de la caméra
-        glm::mat4 view = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
-        // Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-        // rotation de la surface , 0 de base et dans ETAT rotation on change la valeur de l'angle
-        if (ETAT_ACTIF == ETAT_ROTATION) {
-            if (rotation_Axis == 'x') model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-            if (rotation_Axis == 'y') model = glm::rotate(model, glm::radians(angle), glm::vec3(.0f, 1.0f, 0.0f));
-        } else if (ETAT_ACTIF == ETAT_ORBITAL) {
-            if (rotation_Axis == 'x') model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.0f, 0.0f));
-            if (rotation_Axis == 'y') model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-        }
-
-        //envoi de la matrice de transformation à la carte graphique (shader)
-        GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-        glm::mat4 MVP = projection * view * model;
+        // Compute the MVP matrix from keyboard and mouse input
+        glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+        glm::mat4 View = glm::lookAt(camera_position, camera_position + camera_target, camera_up);
+        glm::mat4 Model = glm::mat4(1.0f);
+        glm::mat4 MVP = Projection * View * Model;
+        // Send our transformation to the currently bound shader,
+        // in the "MVP" uniform
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-                0,                  // attribute
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void *) 0            // array buffer offset
-        );
-
-        // Index buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
-
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
         // Draw the triangles !
-        glDrawElements(
-                GL_TRIANGLES,      // mode
-                indices.size() * 3,    // count
-                GL_UNSIGNED_SHORT,   // type
-                (void *) 0           // element array buffer offset
-        );
-
-        glEnableVertexAttribArray(1); // UVs
-        glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
-        glVertexAttribPointer(
-                1, // Attribut 1 : coordonnées UV
-                2, // Nombre de composantes (u, v)
-                GL_FLOAT,
-                GL_FALSE,
-                0,
-                (void*)0
-        );
-
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, (void *) 0);
         glDisableVertexAttribArray(0);
-
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
-
+        // Measure speed
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        // Process inputs
+        processInput(window);
     } // Check if the ESC key was pressed or the window was closed
-    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
-           glfwWindowShouldClose(window) == 0);
-
+    while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
     // Cleanup VBO and shader
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &elementbuffer);
