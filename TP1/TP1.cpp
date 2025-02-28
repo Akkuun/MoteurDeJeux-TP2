@@ -85,10 +85,8 @@ void updateTerrain() {
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-    //glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0], GL_STATIC_DRAW);
-
     glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
     glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(vec2), &texCoords[0], GL_STATIC_DRAW);
 }
@@ -97,13 +95,15 @@ void processInput(GLFWwindow *window) {
     float cameraSpeed = 2.5f * deltaTime;
     //change the state of the camera
 
-    //appuie sur + -> augmente la résolution
+
+    // MES TOUCHES - ET + NE FONCTIONNANT PAS SUR MON CLAVIER J'AI DU UTILISER T ET G
+    //appuie sur T -> augmente la résolution
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
         resolution++;
         updateTerrain();
         cout << "RESOLUTION : " << resolution << endl;
     }
-    //appuie sur - -> diminue la résolution
+    //appuie sur G -> diminue la résolution
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
         resolution--;
         updateTerrain();
@@ -315,8 +315,8 @@ void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::v
             u = float(i) / n;
             v = 1.f - float(j) / m;
             //y = heightMap.data[u * heightMap.w+ v * heightMap.h * heightMap.w] / 255.f * 0.5;
-            y = heightMap.data[static_cast<int>(u * (heightMap.w - 1)) +
-                               static_cast<int>(v * (heightMap.h - 1)) * heightMap.w] / 255.f;
+            y = (255 - heightMap.data[static_cast<int>(u * (heightMap.w - 1)) +
+                                      static_cast<int>(v * (heightMap.h - 1)) * heightMap.w]) / 255.f * 0.45f;
             if (z > zmax) {
                 zmax = z;
             }
@@ -421,11 +421,11 @@ int main(void) {
 
     // READ TEXTURES
     int nH2, nW2;
-    lire_nb_lignes_colonnes_image_pgm("../img/Heightmap_Rocky.pgm", &nH2, &nW2);
+    lire_nb_lignes_colonnes_image_pgm("../img/Heightmap_Mountain.pgm", &nH2, &nW2);
     cout << "nH2 : " << nH2 << " nW2 : " << nW2 << endl;
     int nTaille2 = nH2 * nW2;
     allocation_tableau(HeightMap, OCTET, nTaille2);
-    lire_image_pgm("../img/Heightmap_Rocky.pgm", HeightMap, nH2 * nW2);
+    lire_image_pgm("../img/Heightmap_Mountain.pgm", HeightMap, nH2 * nW2);
 
 
 
