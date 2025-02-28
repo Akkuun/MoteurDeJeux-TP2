@@ -229,51 +229,51 @@ void processInput(GLFWwindow *window) {
 
         cout << "ANGLE : " << angle << endl;
 
-    } else if (ETAT_ACTIF == ETAT_ORBITAL) {
+        } else if (ETAT_ACTIF == ETAT_ORBITAL) {
 
-        //camera orbitale
-        // up -> AUGMENTE LA vitesse
-        // down -> DIMINUE LA vitesse
-        // left -> ROTATION SUR L'AXE X
-        // right -> ROTATION SUR L'AXE Y
+            //camera orbitale
+            // up -> AUGMENTE LA vitesse
+            // down -> DIMINUE LA vitesse
+            // left -> ROTATION SUR L'AXE X
+            // right -> ROTATION SUR L'AXE Y
 
-//        cout << "ETAT ORBITAL" << endl;
-        // Define the rotation speed
+    //        cout << "ETAT ORBITAL" << endl;
+            // Define the rotation speed
 
 
 
-        // UP -> INCREASE SPEED
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
-            rotationSurfacespeed += 10.0f;
-            key_pressedUp = true;
+            // UP -> INCREASE SPEED
+            if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
+                rotationSurfacespeed += 10.0f;
+                key_pressedUp = true;
+            }
+            if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
+                key_pressedUp = false;
+            }
+            // DOWN -> DECREASE SPEED
+            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
+                rotationSurfacespeed -= 10.0f;
+                key_pressedDown = true;
+            }
+            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+                key_pressedDown = false;
+            }
+            // LEFT -> ROTATE ON X AXIS
+            if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+                angle += rotationSurfacespeed * deltaTime;
+                rotation_Axis = 'x';
+            }
+            // RIGHT -> ROTATE ON Y AXIS
+            if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+                angle += rotationSurfacespeed * deltaTime;
+                rotation_Axis = 'y';
+            }
+
+            cout << "ROTATION AXIS : " << rotation_Axis << endl;
+            cout << rotation_Axis << endl;
+            // Rotate the surface continuously
+
         }
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
-            key_pressedUp = false;
-        }
-        // DOWN -> DECREASE SPEED
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
-            rotationSurfacespeed -= 10.0f;
-            key_pressedDown = true;
-        }
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
-            key_pressedDown = false;
-        }
-        // LEFT -> ROTATE ON X AXIS
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            angle += rotationSurfacespeed * deltaTime;
-            rotation_Axis = 'x';
-        }
-        // RIGHT -> ROTATE ON Y AXIS
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            angle += rotationSurfacespeed * deltaTime;
-            rotation_Axis = 'y';
-        }
-
-        cout << "ROTATION AXIS : " << rotation_Axis << endl;
-        cout << rotation_Axis << endl;
-        // Rotate the surface continuously
-
-    }
 
 
 }
