@@ -29,12 +29,6 @@ float zoom = 1.0f;
 OCTET *HeightMap;
 float rotationSurfacespeed = 5.0f;
 
-static bool cKeyPressed = false;
-static bool key_pressedUp = false;
-static bool key_pressedDown = false;
-
-int ETAT_ACTIF = 0;
-const int ETAT_CLAMP = 0, ETAT_LIBRE = 1, ETAT_ROTATION = 2, ETAT_ORBITAL = 3;
 
 char rotation_Axis = 'x';
 
@@ -57,14 +51,16 @@ struct Vertex {
 
 void processInput(GLFWwindow *window);
 
-void create_sphere_textured(int stacks, int slices, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, std::vector<glm::vec2> &uvs);
+void
+create_sphere_textured(int stacks, int slices, std::vector <glm::vec3> &vertices, std::vector<unsigned short> &indices,
+                       std::vector <glm::vec2> &uvs);
 
 
 // === Données ===
 int resolution = 32;
 vector<unsigned short> indices;
-vector<vec3> indexed_vertices;
-vector<vec2> texCoords;
+vector <vec3> indexed_vertices;
+vector <vec2> texCoords;
 Texture HeightMapTexture;
 vector<float> vertexHeights;
 // === Buffers ===
@@ -95,185 +91,37 @@ void processInput(GLFWwindow *window) {
     //change the state of the camera
 
 
-    // MES TOUCHES - ET + NE FONCTIONNANT PAS SUR MON CLAVIER J'AI DU UTILISER T ET G
-    //appuie sur T -> augmente la résolution
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-        resolution++;
-        updateTerrain();
-        cout << "RESOLUTION : " << resolution << endl;
-    }
-    //appuie sur G -> diminue la résolution
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        resolution--;
-        updateTerrain();
-        cout << "RESOLUTION : " << resolution << endl;
-    }
-
-
-    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS && !cKeyPressed) {
-//        cout << "ETAT ACTIF : " << ETAT_ACTIF << endl;
-        ETAT_ACTIF = (ETAT_ACTIF + 1) % 4;
-        cKeyPressed = true;
-    }
-    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_RELEASE) {
-        cKeyPressed = false;
-    }
-    //close the window
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-
-    if (ETAT_ACTIF == ETAT_CLAMP) {
-//        cout << "ETAT CLAMP" << endl;
-        // Camera movement
-        // Zoom In
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            if (camera_position.z > 2.8f) camera_position += cameraSpeed * camera_target;
-        // Zoom Out
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            if (camera_position.z < 7.0f) camera_position -= cameraSpeed * camera_target;
-        // Left
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-
-            if (camera_position.x > 0.0f)
-                camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
-
-        }
-        // Right
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-
-            if (camera_position.x < 1.7f)
-                camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
-
-        }
-        //Up
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            camera_position += cameraSpeed * camera_up;
-        //Down
-        //we clamp to 0 the y value of the camera position to avoid going under the terrain
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            //make sure that the camera won't go bellow 0.5f
-
-            if (camera_position.y > 0.5f) {
-                camera_position -= cameraSpeed * camera_up;
-            }
-        }
-    }
-        //ETAT LIBRE
-    else if (ETAT_ACTIF == ETAT_LIBRE) {
 //        cout << "ETAT LIBRE" << endl;
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            camera_position += cameraSpeed * camera_target;
-        // Zoom Out
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            camera_position -= cameraSpeed * camera_target;
-        // Left
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera_position += cameraSpeed * camera_target;
+    // Zoom Out
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera_position -= cameraSpeed * camera_target;
+    // Left
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 
 
-            camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
+        camera_position -= glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
 
-        }
-        // Right
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-
-
-            camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
-
-        }
-        //Up
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-            camera_position += cameraSpeed * camera_up;
-        //Down
-        //we clamp to 0 the y value of the camera position to avoid going under the terrain
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            //make sure that the camera won't go bellow 0.5f
-            camera_position -= cameraSpeed * camera_up;
-
-        }
-
-    } else if (ETAT_ACTIF == ETAT_ROTATION) {
-        // Define the rotation speed
-        float coef = 1.0f;
-
-        // Increase speed
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
-            rotationSurfacespeed += 10.0f;
-            key_pressedUp = true;
-        }
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
-            key_pressedUp = false;
-        }
-
-        // Decrease speed
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
-            rotationSurfacespeed -= 10.0f;
-            key_pressedDown = true;
-        }
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
-            key_pressedDown = false;
-        }
-
-        // Change direction based on key press
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            coef = 1.0f;
-        }
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            coef = -1.0f;
-        }
-
-        // la surface tourne continuellement sur elle meme
-        angle += rotationSurfacespeed * deltaTime * coef;
-
-        cout << "ANGLE : " << angle << endl;
-
-        } else if (ETAT_ACTIF == ETAT_ORBITAL) {
-
-            //camera orbitale
-            // up -> AUGMENTE LA vitesse
-            // down -> DIMINUE LA vitesse
-            // left -> ROTATION SUR L'AXE X
-            // right -> ROTATION SUR L'AXE Y
-
-    //        cout << "ETAT ORBITAL" << endl;
-            // Define the rotation speed
+    }
+    // Right
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 
 
+        camera_position += glm::normalize(glm::cross(camera_target, camera_up)) * cameraSpeed;
 
-            // UP -> INCREASE SPEED
-            if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && !key_pressedUp) {
-                rotationSurfacespeed += 10.0f;
-                key_pressedUp = true;
-            }
-            if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
-                key_pressedUp = false;
-            }
-            // DOWN -> DECREASE SPEED
-            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && !key_pressedDown) {
-                rotationSurfacespeed -= 10.0f;
-                key_pressedDown = true;
-            }
-            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
-                key_pressedDown = false;
-            }
-            // LEFT -> ROTATE ON X AXIS
-            if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-                angle += rotationSurfacespeed * deltaTime;
-                rotation_Axis = 'x';
-            }
-            // RIGHT -> ROTATE ON Y AXIS
-            if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-                angle += rotationSurfacespeed * deltaTime;
-                rotation_Axis = 'y';
-            }
+    }
+    //Up
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camera_position += cameraSpeed * camera_up;
+    //Down
+    //we clamp to 0 the y value of the camera position to avoid going under the terrain
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        //make sure that the camera won't go bellow 0.5f
+        camera_position -= cameraSpeed * camera_up;
 
-            cout << "ROTATION AXIS : " << rotation_Axis << endl;
-            cout << rotation_Axis << endl;
-            // Rotate the surface continuously
-
-        }
-
+    }
 
 }
 
@@ -283,7 +131,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void computeMinMaxHeight(const std::vector<glm::vec3> &vertices, float &minHeight, float &maxHeight) {
+void computeMinMaxHeight(const std::vector <glm::vec3> &vertices, float &minHeight, float &maxHeight) {
     minHeight = FLT_MAX;
     maxHeight = -FLT_MAX;
     for (const auto &v: vertices) {
@@ -293,7 +141,9 @@ void computeMinMaxHeight(const std::vector<glm::vec3> &vertices, float &minHeigh
 }
 
 // Fonction qui crée une sphère texturée
-void create_sphere_textured(int stacks, int slices, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, std::vector<glm::vec2> &uvs) {
+void
+create_sphere_textured(int stacks, int slices, std::vector <glm::vec3> &vertices, std::vector<unsigned short> &indices,
+                       std::vector <glm::vec2> &uvs) {
     vertices.clear();
     indices.clear();
     uvs.clear();
