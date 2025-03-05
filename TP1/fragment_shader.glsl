@@ -1,7 +1,7 @@
 #version 330 core
 
 in vec2 UV;
-in float height;
+
 
 out vec3 color;
 
@@ -16,24 +16,7 @@ void main() {
     //without mix
 
     //grey color
-    //color  = (heightMapColor + rockColor + snowColor) / 3.0;
-
-//    if(height < 0.33){
-//        color = heightMapColor;
-//    }else if(height < 0.66){
-//        color = rockColor;
-//    }
-//    else{
-//        color = snowColor;
-//    }
+    color  = (heightMapColor + rockColor + snowColor) / 3.0;
 
 
-    //    // Mix textures based on height
-    if (height < 0.33) {
-        color = mix(heightMapColor, rockColor, height / 0.33);
-    } else if (height < 0.66) {
-        color = mix(rockColor, snowColor, (height - 0.33) / 0.66);
-    } else {
-        color = snowColor;
-    }
 }

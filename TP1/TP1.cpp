@@ -294,11 +294,8 @@ void computeMinMaxHeight(const std::vector<glm::vec3> &vertices, float &minHeigh
 }
 
 //fonction qui :
-// - crée un terrain de taille 1x1
-// - le découpe en i x i carrés
-// vertices -> tableau de sommets
-// texCoords -> tableau de coordonnées de texture UV
-// indices -> tableau d'indices des sommets pour les triangles
+// - crée une sphère
+// - lui applique une texture
 void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices,
                           std::vector<glm::vec2> &uvs, Texture &heightMap) {
 
@@ -462,9 +459,7 @@ int main(void) {
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(2);  // Attribut 2 pour vertexHeight
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *) 0);
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, vertexHeightBuffer);
-//    glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(float), &vertexHeights[0], GL_STATIC_DRAW);
+
     //TEXTURES FOR THE HEIGHTMAP
     int nH_grass, nW_grass;
     OCTET *grassImg;
