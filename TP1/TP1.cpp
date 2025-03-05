@@ -57,8 +57,7 @@ struct Vertex {
 
 void processInput(GLFWwindow *window);
 
-void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices,
-                          std::vector<glm::vec2> &uvs, Texture &heightMap);
+void create_sphere_textured(int stacks, int slices, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, std::vector<glm::vec2> &uvs);
 
 
 // === Données ===
@@ -81,7 +80,7 @@ void updateTerrain() {
     indexed_vertices.clear();
     indices.clear();
 
-    create_plan_textured(resolution, resolution, indexed_vertices, indices, texCoords, HeightMapTexture);
+    create_sphere_textured(resolution, resolution, indexed_vertices, indices, texCoords);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(vec3), &indexed_vertices[0], GL_STATIC_DRAW);
@@ -293,57 +292,37 @@ void computeMinMaxHeight(const std::vector<glm::vec3> &vertices, float &minHeigh
     }
 }
 
-//fonction qui :
-// - crée une sphère
-// - lui applique une texture
-void create_plan_textured(int n, int m, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices,
-                          std::vector<glm::vec2> &uvs, Texture &heightMap) {
-
+// Fonction qui crée une sphère texturée
+void create_sphere_textured(int stacks, int slices, std::vector<glm::vec3> &vertices, std::vector<unsigned short> &indices, std::vector<glm::vec2> &uvs) {
     vertices.clear();
     indices.clear();
     uvs.clear();
-    float x, y, z, u, v;
-    float zmax = -1000;
-    float zmin = 1000;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            x = float(i) / n - 0.5;
-            z = float(j) / m - 0.5;
-            u = float(i) / n;
-            v = 1.f - float(j) / m;
-            //y = heightMap.data[u * heightMap.w+ v * heightMap.h * heightMap.w] / 255.f * 0.5;
-            y = (255 - heightMap.data[static_cast<int>(u * (heightMap.w - 1)) +
-                                      static_cast<int>(v * (heightMap.h - 1)) * heightMap.w]) / 255.f * 0.45f;
-            if (z > zmax) {
-                zmax = z;
-            }
-            if (z < zmin) {
-                zmin = z;
-            }
-            glm::vec3 vertex(x, y, z);
-            vertices.push_back(vertex);
-            uvs.push_back(glm::vec2(u, v));
 
-            if (i < n - 1 && j < m - 1) {
-                indices.push_back(i * m + j);
-                indices.push_back((i + 1) * m + j + 1);
-                indices.push_back((i + 1) * m + j);
+    for (int i = 0; i <= stacks; ++i) {
+        float V = i / (float) stacks;
+        float phi = V * glm::pi<float>();
 
-                indices.push_back(i * m + j);
-                indices.push_back(i * m + j + 1);
-                indices.push_back((i + 1) * m + j + 1);
-            }
+        for (int j = 0; j <= slices; ++j) {
+            float U = j / (float) slices;
+            float theta = U * (glm::pi<float>() * 2);
+
+            float x = cos(theta) * sin(phi);
+            float y = cos(phi);
+            float z = sin(theta) * sin(phi);
+
+            vertices.push_back(glm::vec3(x, y, z));
+            uvs.push_back(glm::vec2(U, V));
         }
     }
 
-    float minHeight, maxHeight;
-    computeMinMaxHeight(vertices, minHeight, maxHeight);
+    for (int i = 0; i < slices * stacks + slices; ++i) {
+        indices.push_back(i);
+        indices.push_back(i + slices + 1);
+        indices.push_back(i + slices);
 
-    for (size_t i = 0; i < vertices.size(); i++) {
-        float height = vertices[i].y;
-        float normalizedHeight = (height - minHeight) / (maxHeight - minHeight); // Valeur entre 0 et 1
-
-        texCoords.push_back(glm::vec2(vertices[i].x, normalizedHeight)); // Utiliser y pour v
+        indices.push_back(i + slices + 1);
+        indices.push_back(i);
+        indices.push_back(i + 1);
     }
 }
 
@@ -432,7 +411,7 @@ int main(void) {
     HeightMapTexture.h = nH2;
 
     // CREATE GEOMETRY
-    create_plan_textured(resolution, resolution, indexed_vertices, indices, texCoords, HeightMapTexture);
+    create_sphere_textured(resolution, resolution, indexed_vertices, indices, texCoords);
 
     // creation du buffer pour les coordonnées de texture
 
