@@ -245,20 +245,7 @@ int main(void) {
     GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 
 
-    // READ TEXTURES
-    int nH2, nW2;
-    lire_nb_lignes_colonnes_image_pgm("../img/Heightmap_Mountain.pgm", &nH2, &nW2);
-    cout << "nH2 : " << nH2 << " nW2 : " << nW2 << endl;
-    int nTaille2 = nH2 * nW2;
-    allocation_tableau(HeightMap, OCTET, nTaille2);
-    lire_image_pgm("../img/Heightmap_Mountain.pgm", HeightMap, nH2 * nW2);
 
-
-
-    // BIND HEIGHTMAP TEXTURE
-    HeightMapTexture.data = HeightMap;
-    HeightMapTexture.w = nW2;
-    HeightMapTexture.h = nH2;
 
     // CREATE GEOMETRY
     create_sphere_textured(resolution, resolution, indexed_vertices, indices, texCoords);
@@ -289,33 +276,14 @@ int main(void) {
     glEnableVertexAttribArray(2);  // Attribut 2 pour vertexHeight
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *) 0);
 
-    //TEXTURES FOR THE HEIGHTMAP
-    int nH_grass, nW_grass;
-    OCTET *grassImg;
-    lire_nb_lignes_colonnes_image_ppm("../img/grass.ppm", &nH_grass, &nW_grass);
-    allocation_tableau(grassImg, OCTET, nH_grass * nW_grass * 3);
-    lire_image_ppm("../img/grass.ppm", grassImg, nH_grass * nW_grass);
-
+    //TEXTURES FOR THE  PLANET
     OCTET *rockImg;
     int nH_rock, nW_rock;
     lire_nb_lignes_colonnes_image_ppm("../img/rock.ppm", &nH_rock, &nW_rock);
     allocation_tableau(rockImg, OCTET, nH_rock * nW_rock * 3);
     lire_image_ppm("../img/rock.ppm", rockImg, nH_rock * nW_rock);
 
-    OCTET *snowImg;
-    int nH_snow, nW_snow;
-    lire_nb_lignes_colonnes_image_ppm("../img/snowrocks.ppm", &nH_snow, &nW_snow);
-    allocation_tableau(snowImg, OCTET, nH_snow * nW_snow * 3);
-    lire_image_ppm("../img/snowrocks.ppm", snowImg, nH_snow * nW_snow);
 
-    //TEXTURE FOR THE HEIGHTMAP
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW_grass, nH_grass, 0, GL_RGB, GL_UNSIGNED_BYTE, grassImg);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glUniform1i(glGetUniformLocation(programID, "textureHeightMap"), 0);
 
     GLuint textureID2;
     glGenTextures(1, &textureID2);
@@ -325,12 +293,6 @@ int main(void) {
     glGenerateMipmap(GL_TEXTURE_2D);
     glUniform1i(glGetUniformLocation(programID, "textureRock"), 1);
 
-    GLuint textureID3;
-    glGenTextures(1, &textureID3);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, textureID3);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nW_snow, nH_snow, 0, GL_RGB, GL_UNSIGNED_BYTE, snowImg);
-    glGenerateMipmap(GL_TEXTURE_2D);
 
     // Main loop
 
@@ -369,9 +331,8 @@ int main(void) {
         glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void *) 0);
 
 
-        glUniform1i(glGetUniformLocation(programID, "textureHeightMap"), 0);
         glUniform1i(glGetUniformLocation(programID, "textureRock"), 1);
-        glUniform1i(glGetUniformLocation(programID, "textureSnow"), 2);
+
 
 
         // Swap buffers
